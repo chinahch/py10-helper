@@ -5,11 +5,15 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
+# 强制该工作流中的 Actions 使用 Node.js 24 运行，消除弃用警告
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 必须开启写入权限，否则无法发布 Release
+      contents: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -18,22 +22,25 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
-        cache: false  # 关闭缓存检查，消除那个黄色的 Restore cache 警告
+        cache: false
 
     - name: Build Binary
       run: |
-        # 强制静态编译，确保 GLIBC 兼容性
+        # 强制静态编译
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o py10-helper-linux-amd64 py10-helper.go
         CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o py10-helper-linux-arm64 py10-helper.go
 
     - name: Update Latest Release
-      uses: softprops/action-gh-release@v2  # 升级到 v2 版本，更稳定
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: latest
         name: "Latest Build"
-        note: "自动化编译产生的最新二进制文件"
+        # 修复点：将 'note' 改为 'body'
+        body: "自动化编译产生的最新二进制文件 (包含 amd64 和 arm64)"
         files: |
           py10-helper-linux-amd64
           py10-helper-linux-arm64
+        # 确保每次都覆盖掉旧的 'latest' 标签下的文件
+        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,31 @@
+name: Auto Compile Helper
+
+on:
+  push:
+    branches: [ "master" ]  # 确保这里和你本地的分支名一致
+    paths:
+      - 'py10-helper.go'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build Binary
+      run: |
+        # 编译常用架构
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o py10-helper-linux-amd64 py10-helper.go
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o py10-helper-linux-arm64 py10-helper.go
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: py10-helper-binaries
+        path: py10-helper-linux-*

@@ -1650,3 +1650,4 @@ func jqArr(v any) []any { if a,ok:=v.([]any); ok { return a }; return nil }
 func jqClone(m map[string]any) map[string]any { b,_:=json.Marshal(m); out:=map[string]any{}; _=json.Unmarshal(b,&out); return out }
 func jqStr(v any) string { switch t:=v.(type){ case nil:return ""; case string:return t; case json.Number:return t.String(); case float64: if t==float64(int64(t)) { return strconv.FormatInt(int64(t),10) }; return fmt.Sprintf("%v",t); default:return fmt.Sprintf("%v",t) } }
 func jqInt(v any) int { switch t:=v.(type){ case int:return t; case int64:return int(t); case float64:return int(t); case json.Number:i,_:=t.Int64(); return int(i); case string:i,_:=strconv.Atoi(t); return i; default:return 0 } }
+// trigger build

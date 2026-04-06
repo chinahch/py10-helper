@@ -3,17 +3,13 @@ name: Auto Compile Helper
 on:
   push:
     branches: [ "master" ]
-    # 只要这文件变了就重新编译
-    paths:
-      - 'py10-helper.go'
-  workflow_dispatch: # 允许你在网页点按钮手动触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 必须添加这个权限，否则无法发布文件到 Release
     permissions:
-      contents: write
+      contents: write  # 必须开启写入权限，否则无法发布 Release
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -22,20 +18,22 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
+        cache: false  # 关闭缓存检查，消除那个黄色的 Restore cache 警告
 
     - name: Build Binary
       run: |
-        # 强制静态编译，解决系统兼容性
+        # 强制静态编译，确保 GLIBC 兼容性
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o py10-helper-linux-amd64 py10-helper.go
         CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o py10-helper-linux-arm64 py10-helper.go
 
-    # 关键步骤：发布到固定 Release 页面 (tag 名为 latest)
     - name: Update Latest Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2  # 升级到 v2 版本，更稳定
       with:
         tag_name: latest
-        files: py10-helper-linux-*
-        # 即使标签已存在也强制覆盖文件
-        overwrite: true
+        name: "Latest Build"
+        note: "自动化编译产生的最新二进制文件"
+        files: |
+          py10-helper-linux-amd64
+          py10-helper-linux-arm64
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
